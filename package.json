@@ -1,7 +1,7 @@
 {
   "name": "api-transitions",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "repository": "https://github.com/SaldanhaEduardo/transacoes-api.git",
   "author": "joao.oliveira0117@hotmail.com <joao.oliveira0117@hotmail.com>",
   "license": "MIT",
