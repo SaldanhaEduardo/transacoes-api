@@ -1,9 +1,39 @@
 const express = require("express");
-const {uuid} = require("uuidv4");
+const {uuid, isUuid} = require("uuidv4");
 const app = express();
 app.use(express.json());
 
 const transactions = [];
+
+//iniciar MIDDLEWARES.
+function verifyUID (request, response, next){
+    const { id } = request.params;
+
+    if (!isUuid(id)) {
+        return response.status(400).json({ error: "Param sent is not a valid UUID" });
+    }
+    next();
+}
+
+function uuidExistence (request, response, next){
+    const { id } = request.params;
+    request.transactionIndex = id;
+
+    next()
+}
+
+
+function logRequests(request,response, next){
+    const {method,url} = request;
+    
+    const logLabel = `[${method.toUpperCase()}] ${url}`//[GET] /projects?title=react
+    console.log(logLabel);
+    
+    return next(); //próximo middleware
+}
+
+app.use("/transactions/:id", verifyUID, uuidExistence);
+app.use(logRequests);
 
 app.get("/transactions", (request, response) => {
     const { title, value, type } = request.query; 
@@ -40,40 +70,42 @@ app.post('/transactions', (request, response) => {
 app.put("/transactions/:id", (request, response) => {
     const { id } = request.params;
     const { title, value, type } = request.body;
-  
-    const transactionIndex = transactions.findIndex((transaction) => transaction.id === id);
-  
+    const transactionId = transactions.findIndex((transaction) => transaction.id === id);
+
+    if(transaction.id === request.transactionIndex){
     const transaction = {
-      id,
-      title,
-      value,
-      type
+    id,
+    title,
+    value,
+    type
     };
-  
-    transactions[transactionIndex] = transaction;
-  
+    
+    transactions[transactionId] = transaction;
+
     return response.json(transactions);
+
+
+    } else {
+        return response.status(404).json({error:"Not Found"});
+    }
   });
 
 
 app.delete('/transactions/:id', (request, response) => {
-
     const { id } = request.params;
-    const { title, value, type } = request.params;
-    const transactionIndex = transactions.findIndex(transaction => transaction.id == id);
+    const transactionId = transactions.findIndex((transaction) => transaction.id === id);
+
+    if(transaction.id === request.transactionIndex){
+        if(transactionId < 0) {
+            return response.status(400).json({error: "Transaction not found"});
+        }
     
-    if(transactionIndex < 0) {
-        return response.status(400).json({error: "Transaction not found"});
+        transactions.splice(transactionId, 1);
+        return response.status(204).json({error: "Done"});
+    } else {
+        return response.status(404).json({error:"Not Found"});
     }
-
-    transactions.splice(transactionIndex, 1);
-
-    return response.status(204).send();
 })
-
-//iniciar MIDDLEWARES.
-
-//iniciar a porta do insomnia
 
 const port = 3333;
 app.listen(port, () => {
